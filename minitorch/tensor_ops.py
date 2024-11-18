@@ -11,11 +11,12 @@ from .tensor_data import (
     index_to_position,
     shape_broadcast,
     to_index,
+    MAX_DIMS
 )
 
 if TYPE_CHECKING:
     from .tensor import Tensor
-    from .tensor_data import Shape, Storage, Strides
+    from .tensor_data import Shape, Storage, Strides, Index
 
 
 class MapProto(Protocol):
@@ -229,7 +230,22 @@ class SimpleOps(TensorOps):
     @staticmethod
     def matrix_multiply(a: "Tensor", b: "Tensor") -> "Tensor":
         """Matrix multiplication"""
-        raise NotImplementedError("Not implemented in this assignment")
+        assert len(a.shape) == 2, "Matrix a must be 2D"
+        assert len(b.shape) == 2, "Matrix b must be 2D"
+        assert a.shape[1] == b.shape[0], "Incompatible dimensions for matrix multiplication"
+
+        out_rows, out_cols = a.shape[0], b.shape[1]
+        common_dim = a.shape[1]
+
+        out = a.zeros(tuple([out_rows, out_cols]))
+        for i in range(out_rows):
+            for j in range(out_cols):
+                value = 0.0
+                for k in range(common_dim):
+                    value += a[i, k] * b[k, j]
+                out[i, j] = value
+
+        return out
 
     is_cuda = False
 
@@ -286,6 +302,7 @@ def tensor_map(
             pos_big = index_to_position(big_index, out_strides)
             # map
             out[pos_big] = fn(in_storage[pos_small])
+        
 
     return _map
 

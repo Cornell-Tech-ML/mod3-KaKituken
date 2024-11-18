@@ -21,7 +21,7 @@ one_arg, two_arg, red_arg = MathTestVariable._comp_testing()
 
 SimpleBackend = minitorch.TensorBackend(minitorch.SimpleOps)
 FastTensorBackend = minitorch.TensorBackend(minitorch.FastOps)
-shared: Dict[str, TensorBackend] = {"fast": FastTensorBackend}
+shared: Dict[str, TensorBackend] = {"fast": FastTensorBackend, 'simple': SimpleBackend}
 
 # ## Task 3.1
 backend_tests = [pytest.param("fast", marks=pytest.mark.task3_1)]
@@ -306,7 +306,7 @@ if numba.cuda.is_available():
 
 
 @given(data())
-@settings(max_examples=25)
+@settings(max_examples=26)
 @pytest.mark.parametrize("fn", two_arg)
 @pytest.mark.parametrize("backend", backend_tests)
 def test_two_grad_broadcast(

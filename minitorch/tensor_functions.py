@@ -199,10 +199,10 @@ class Sum(Function):
         return t1.f.add_reduce(t1, dim_int)
 
     @staticmethod
-    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
         """Call backward for Sum"""
         (t1,) = ctx.saved_tensors
-        return t1.f.add_zip(zeros(t1.shape), grad_output), zeros(grad_output.shape)
+        return grad_output, 0.0
 
 
 class LT(Function):
@@ -238,7 +238,7 @@ class IsClose(Function):
     def forward(ctx: Context, t1: Tensor, t2: Tensor) -> Tensor:
         """Call forward for IsClose"""
         ctx.save_for_backward(t1, t2)
-        return t1.f.mul_zip(t1, t2)
+        return t1.f.is_close_zip(t1, t2)
 
 
 class Permute(Function):

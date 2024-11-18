@@ -381,18 +381,16 @@ class Tensor:
     def sum(self, dim: Optional[int] = None) -> Tensor:
         """Function sum"""
         if dim is not None:
-            dim_tensor = tensor([float(dim)])
-            return Sum.apply(self, dim_tensor)
+            return Sum.apply(self, self._ensure_tensor(dim))
         else:
-            return Sum.apply(self.contiguous().view(self.size), tensor(0.0))
+            return Sum.apply(self.contiguous().view(self.size), self._ensure_tensor(0))
 
     def mean(self, dim: Optional[int] = None) -> Tensor:
         """Function mean"""
         if dim is not None:
-            dim_tensor = Tensor.make([float(dim)], shape=(1,), backend=self.backend)
-            return Sum.apply(self, dim_tensor) / self.shape[dim]
+            return self.sum(dim) / self.shape[dim]
         else:
-            return Sum.apply(self.contiguous().view(self.size), tensor(0.0)) / self.size
+            return self.sum() / self.size
 
     def is_close(self, b: TensorLike) -> Tensor:
         """Function is_close"""
@@ -400,15 +398,11 @@ class Tensor:
 
     def view(self, *v_shape: int) -> Tensor:
         """Change the view shape of a tensor"""
-        v_shape_tensor = Tensor.make(
-            list(v_shape), (len(v_shape),), backend=self.backend
-        )
-        return View.apply(self, v_shape_tensor)
+        return View.apply(self, tensor(list(v_shape)))
 
     def permute(self, *order: int) -> Tensor:
         """Swap axis for a tensor"""
-        order_tensor = Tensor.make(list(order), (len(order),), backend=self.backend)
-        return Permute.apply(self, order_tensor)
+        return Permute.apply(self, tensor(list(order)))
 
     def zero_grad_(self) -> None:
         """Clear the grad for a tensor"""
