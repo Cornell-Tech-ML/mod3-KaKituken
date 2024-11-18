@@ -21,7 +21,7 @@ one_arg, two_arg, red_arg = MathTestVariable._comp_testing()
 
 SimpleBackend = minitorch.TensorBackend(minitorch.SimpleOps)
 FastTensorBackend = minitorch.TensorBackend(minitorch.FastOps)
-shared: Dict[str, TensorBackend] = {"fast": FastTensorBackend, 'simple': SimpleBackend}
+shared: Dict[str, TensorBackend] = {"fast": FastTensorBackend, "simple": SimpleBackend}
 
 # ## Task 3.1
 backend_tests = [pytest.param("fast", marks=pytest.mark.task3_1)]

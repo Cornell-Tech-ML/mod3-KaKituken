@@ -72,7 +72,7 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
     for i in range(len(shape) - 1, -1, -1):
         sh = shape[i]
         out_index[i] = int(temp_ordinal % sh)
-        temp_ordinal //= sh 
+        temp_ordinal //= sh
 
 
 def broadcast_index(
@@ -97,13 +97,11 @@ def broadcast_index(
 
     """
     # TODO: Implement for Task 2.2.
-    len_small = len(shape)
-    len_big = len(big_shape)
-    for idx_out, idx_big in enumerate(range(len_big - len_small, len_big)):
-        if shape[idx_out] == 1:
-            out_index[idx_out] = 0
+    for i, s in enumerate(shape):
+        if s > 1:
+            out_index[i] = big_index[i + (len(big_shape) - len(shape))]
         else:
-            out_index[idx_out] = big_index[idx_big]
+            out_index[i] = 0
 
 
 def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
@@ -124,25 +122,23 @@ def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
 
     """
     # TODO: Implement for Task 2.2.
-    broadcase_shape: UserShape = []
-    shape1 = list(shape1)[::-1]
-    shape2 = list(shape2)[::-1]
-    for i in range(max(len(shape1), len(shape2))):
-        if i >= len(shape1):
-            d1 = 1
+    a, b = shape1, shape2
+    m = max(len(a), len(b))
+    c_rev = [0] * m
+    a_rev = list(reversed(a))
+    b_rev = list(reversed(b))
+    for i in range(m):
+        if i >= len(a):
+            c_rev[i] = b_rev[i]
+        elif i >= len(b):
+            c_rev[i] = a_rev[i]
         else:
-            d1 = shape1[i]
-        if i >= len(shape2):
-            d2 = 1
-        else:
-            d2 = shape2[i]
-
-        if d1 == d2 or (d1 == 1 or d2 == 1):
-            broadcase_shape.append(max(d1, d2))
-        else:
-            raise IndexingError(f"Cannot broadcast shapes {shape1} and {shape2}")
-
-    return tuple(broadcase_shape[::-1])
+            c_rev[i] = max(a_rev[i], b_rev[i])
+            if a_rev[i] != c_rev[i] and a_rev[i] != 1:
+                raise IndexingError(f"Cannot broadcast {a} and {b}")
+            if b_rev[i] != c_rev[i] and b_rev[i] != 1:
+                raise IndexingError(f"Cannot broadcast {a} and {b}")
+    return tuple(reversed(c_rev))
 
 
 def strides_from_shape(shape: UserShape) -> UserStrides:

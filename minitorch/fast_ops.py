@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from typing import Callable, Optional
 
     from .tensor import Tensor
-    from .tensor_data import Index, Shape, Storage, Strides
+    from .tensor_data import Shape, Storage, Strides
 
 # TIP: Use `NUMBA_DISABLE_JIT=1 pytest tests/ -m task3_1` to run these tests without JIT.
 
@@ -30,6 +30,7 @@ Fn = TypeVar("Fn")
 
 
 def njit(fn: Fn, **kwargs: Any) -> Fn:
+    """Decorator to JIT compile functions with `nopython=True`."""
     return _njit(inline="always", **kwargs)(fn)  # type: ignore
 
 
@@ -170,7 +171,9 @@ def tensor_map(
     ) -> None:
         # TODO: Implement for Task 3.1.
 
-        if np.array_equal(in_strides, out_strides) and np.array_equal(in_shape, out_shape):
+        if np.array_equal(in_strides, out_strides) and np.array_equal(
+            in_shape, out_shape
+        ):
             for pos in prange(len(out)):
                 out[pos] = fn(in_storage[pos])
         else:
@@ -227,10 +230,12 @@ def tensor_zip(
         b_strides: Strides,
     ) -> None:
         # TODO: Implement for Task 3.1.
-        if np.array_equal(a_strides, b_strides) \
-            and np.array_equal(a_shape, b_shape) \
-            and np.array_equal(a_strides, out_strides) \
-            and np.array_equal(a_shape, out_shape):
+        if (
+            np.array_equal(a_strides, b_strides)
+            and np.array_equal(a_shape, b_shape)
+            and np.array_equal(a_strides, out_strides)
+            and np.array_equal(a_shape, out_shape)
+        ):
             for pos in prange(len(out)):
                 out[pos] = fn(a_storage[pos], b_storage[pos])
         else:
@@ -241,15 +246,23 @@ def tensor_zip(
                 to_index(pos, out_shape, big_index)
                 # to small index a
                 # small_index_a = np.zeros_like(a_shape, dtype=np.int32)  # Ensure integer dtype
-                small_index_a = np.zeros(MAX_DIMS, dtype=np.int32)  # Ensure integer dtype
+                small_index_a = np.zeros(
+                    MAX_DIMS, dtype=np.int32
+                )  # Ensure integer dtype
                 broadcast_index(big_index, out_shape, a_shape, small_index_a)
                 # to small index b
                 # small_index_b = np.zeros_like(b_shape, dtype=np.int32)  # Ensure integer dtype
-                small_index_b = np.zeros(MAX_DIMS, dtype=np.int32)  # Ensure integer dtype
+                small_index_b = np.zeros(
+                    MAX_DIMS, dtype=np.int32
+                )  # Ensure integer dtype
                 broadcast_index(big_index, out_shape, b_shape, small_index_b)
                 # to pos
-                pos_small_a = int(index_to_position(small_index_a, a_strides))  # Cast to int
-                pos_small_b = int(index_to_position(small_index_b, b_strides))  # Cast to int
+                pos_small_a = int(
+                    index_to_position(small_index_a, a_strides)
+                )  # Cast to int
+                pos_small_b = int(
+                    index_to_position(small_index_b, b_strides)
+                )  # Cast to int
                 pos_big = int(index_to_position(big_index, out_strides))  # Cast to int
                 # map
                 out[pos_big] = fn(a_storage[pos_small_a], b_storage[pos_small_b])
@@ -303,7 +316,6 @@ def tensor_reduce(
                 a_pos = index_to_position(a_index, a_strides)
                 out[out_pos] = fn(out[out_pos], a_storage[a_pos])
 
-
     return njit(_reduce, parallel=True)  # type: ignore
 
 
@@ -354,7 +366,9 @@ def _tensor_matrix_multiply(
     b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
 
     # Ensure matrix dimensions match for multiplication
-    assert a_shape[-1] == b_shape[-2], "Matrix dimensions incompatible for multiplication"
+    assert (
+        a_shape[-1] == b_shape[-2]
+    ), "Matrix dimensions incompatible for multiplication"
 
     for out_ordinal in prange(len(out)):
         # Convert `out_pos` to multi-dimensional indices for `out_shape`
@@ -374,16 +388,8 @@ def _tensor_matrix_multiply(
         # Compute dot product between `a` and `b`
         for k in range(a_shape[-1]):
             # Calculate positions in `a` and `b` storage
-            a_idx = (
-                a_batch * a_batch_stride
-                + row * a_strides[1]
-                + k * a_strides[2]
-            )
-            b_idx = (
-                b_batch * b_batch_stride
-                + k * b_strides[1]
-                + col * b_strides[2]
-            )
+            a_idx = a_batch * a_batch_stride + row * a_strides[1] + k * a_strides[2]
+            b_idx = b_batch * b_batch_stride + k * b_strides[1] + col * b_strides[2]
             acc += a_storage[a_idx] * b_storage[b_idx]
 
         # Write the computed value to the `out` storage

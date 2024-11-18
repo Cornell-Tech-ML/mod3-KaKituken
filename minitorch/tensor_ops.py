@@ -6,17 +6,11 @@ import numpy as np
 from typing_extensions import Protocol
 
 from . import operators
-from .tensor_data import (
-    broadcast_index,
-    index_to_position,
-    shape_broadcast,
-    to_index,
-    MAX_DIMS
-)
+from .tensor_data import broadcast_index, index_to_position, shape_broadcast, to_index
 
 if TYPE_CHECKING:
     from .tensor import Tensor
-    from .tensor_data import Shape, Storage, Strides, Index
+    from .tensor_data import Shape, Storage, Strides
 
 
 class MapProto(Protocol):
@@ -232,7 +226,9 @@ class SimpleOps(TensorOps):
         """Matrix multiplication"""
         assert len(a.shape) == 2, "Matrix a must be 2D"
         assert len(b.shape) == 2, "Matrix b must be 2D"
-        assert a.shape[1] == b.shape[0], "Incompatible dimensions for matrix multiplication"
+        assert (
+            a.shape[1] == b.shape[0]
+        ), "Incompatible dimensions for matrix multiplication"
 
         out_rows, out_cols = a.shape[0], b.shape[1]
         common_dim = a.shape[1]
@@ -302,7 +298,6 @@ def tensor_map(
             pos_big = index_to_position(big_index, out_strides)
             # map
             out[pos_big] = fn(in_storage[pos_small])
-        
 
     return _map
 
@@ -409,7 +404,6 @@ def tensor_reduce(
                 a_index[reduce_dim] = i
                 a_pos = index_to_position(a_index, a_strides)
                 out[out_pos] = fn(out[out_pos], a_storage[a_pos])
-
 
     return _reduce
 
