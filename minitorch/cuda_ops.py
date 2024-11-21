@@ -522,6 +522,7 @@ def _tensor_matrix_multiply(
     #    b) Copy into shared memory for b matrix
     #    c) Compute the dot produce for position c[i, j]
     # TODO: Implement for Task 3.4.
+    assert a_shape[-1] == b_shape[-2], "The last dimension of a must match the second-to-last dimension of b"
     res = 0.0
     for t in range((a_shape[-1] + BLOCK_DIM - 1) // BLOCK_DIM):
         # Load `a` into shared memory

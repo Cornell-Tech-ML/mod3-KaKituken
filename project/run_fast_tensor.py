@@ -67,7 +67,7 @@ class FastTrain:
 
         self.model = Network(self.hidden_layers, self.backend)
         optim = minitorch.SGD(self.model.parameters(), learning_rate)
-        BATCH = 10
+        BATCH = 256
         losses = []
         epoch_times = []
 
@@ -99,7 +99,7 @@ class FastTrain:
             epoch_times.append(epoch_time)
 
             losses.append(total_loss)
-            if epoch % 10 == 0 or epoch == max_epochs - 1:
+            if epoch % 1 == 0 or epoch == max_epochs - 1:
                 X = minitorch.tensor(data.X, backend=self.backend)
                 y = minitorch.tensor(data.y, backend=self.backend)
                 out = self.model.forward(X).view(y.shape[0])
@@ -107,14 +107,13 @@ class FastTrain:
                 correct = int(((out.detach() > 0.5) == y2).sum()[0])
                 log_fn(epoch, total_loss, correct, losses)
 
-            correct = int(((out.detach() > 0.5) == y2).sum()[0])
-            wandb.log({
-                "epoch": epoch,
-                "loss": total_loss,
-                "epoch_time": epoch_time,
-                "average_epoch_time": sum(epoch_times) / len(epoch_times),
-                "correct": correct
-            })
+                wandb.log({
+                    "epoch": epoch,
+                    "loss": total_loss,
+                    "epoch_time": epoch_time,
+                    "average_epoch_time": sum(epoch_times) / len(epoch_times),
+                    "correct": correct
+                })
 
         # Finish wandb run
         wandb.finish()
