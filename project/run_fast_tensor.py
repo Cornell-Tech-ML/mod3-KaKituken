@@ -1,7 +1,7 @@
 import random
-
+import time
+import wandb
 import numba
-
 import minitorch
 
 datasets = minitorch.datasets
@@ -22,15 +22,14 @@ def RParam(*shape, backend):
 class Network(minitorch.Module):
     def __init__(self, hidden, backend):
         super().__init__()
-
-        # Submodules
         self.layer1 = Linear(2, hidden, backend)
         self.layer2 = Linear(hidden, hidden, backend)
         self.layer3 = Linear(hidden, 1, backend)
 
     def forward(self, x):
-        # TODO: Implement for Task 3.5.
-        raise NotImplementedError("Need to implement for Task 3.5")
+        middle = self.layer1(x).relu()
+        end = self.layer2(middle).relu()
+        return self.layer3.forward(end).sigmoid()
 
 
 class Linear(minitorch.Module):
@@ -43,8 +42,7 @@ class Linear(minitorch.Module):
         self.out_size = out_size
 
     def forward(self, x):
-        # TODO: Implement for Task 3.5.
-        raise NotImplementedError("Need to implement for Task 3.5")
+        return x @ self.weights.value + self.bias.value
 
 
 class FastTrain:
@@ -60,12 +58,21 @@ class FastTrain:
         return self.model.forward(minitorch.tensor(X, backend=self.backend))
 
     def train(self, data, learning_rate, max_epochs=500, log_fn=default_log_fn):
+        # Initialize wandb
+        wandb.init(project="minitorch_training", config={
+            "learning_rate": learning_rate,
+            "epochs": max_epochs,
+            "hidden_layers": self.hidden_layers
+        })
+
         self.model = Network(self.hidden_layers, self.backend)
         optim = minitorch.SGD(self.model.parameters(), learning_rate)
-        BATCH = 10
+        BATCH = 256
         losses = []
+        epoch_times = []
 
         for epoch in range(max_epochs):
+            start_time = time.time()  # Track epoch start time
             total_loss = 0.0
             c = list(zip(data.X, data.y))
             random.shuffle(c)
@@ -73,10 +80,10 @@ class FastTrain:
 
             for i in range(0, len(X_shuf), BATCH):
                 optim.zero_grad()
-                X = minitorch.tensor(X_shuf[i : i + BATCH], backend=self.backend)
-                y = minitorch.tensor(y_shuf[i : i + BATCH], backend=self.backend)
-                # Forward
+                X = minitorch.tensor(X_shuf[i: i + BATCH], backend=self.backend)
+                y = minitorch.tensor(y_shuf[i: i + BATCH], backend=self.backend)
 
+                # Forward pass
                 out = self.model.forward(X).view(y.shape[0])
                 prob = (out * y) + (out - 1.0) * (y - 1.0)
                 loss = -prob.log()
@@ -87,15 +94,29 @@ class FastTrain:
                 # Update
                 optim.step()
 
+            # Log epoch time
+            epoch_time = time.time() - start_time
+            epoch_times.append(epoch_time)
+
             losses.append(total_loss)
-            # Logging
-            if epoch % 10 == 0 or epoch == max_epochs:
+            if epoch % 1 == 0 or epoch == max_epochs - 1:
                 X = minitorch.tensor(data.X, backend=self.backend)
                 y = minitorch.tensor(data.y, backend=self.backend)
                 out = self.model.forward(X).view(y.shape[0])
                 y2 = minitorch.tensor(data.y)
                 correct = int(((out.detach() > 0.5) == y2).sum()[0])
                 log_fn(epoch, total_loss, correct, losses)
+
+                wandb.log({
+                    "epoch": epoch,
+                    "loss": total_loss,
+                    "epoch_time": epoch_time,
+                    "average_epoch_time": sum(epoch_times) / len(epoch_times),
+                    "correct": correct
+                })
+
+        # Finish wandb run
+        wandb.finish()
 
 
 if __name__ == "__main__":
@@ -108,15 +129,19 @@ if __name__ == "__main__":
     parser.add_argument("--BACKEND", default="cpu", help="backend mode")
     parser.add_argument("--DATASET", default="simple", help="dataset")
     parser.add_argument("--PLOT", default=False, help="dataset")
+    parser.add_argument("--RUNNAME", default="run", help="run name")
 
     args = parser.parse_args()
+
+    wandb.login()
+    wandb.init(project="minitorch_training", name=args.RUNNAME, config=args)
 
     PTS = args.PTS
 
     if args.DATASET == "xor":
         data = minitorch.datasets["Xor"](PTS)
     elif args.DATASET == "simple":
-        data = minitorch.datasets["Simple"].simple(PTS)
+        data = minitorch.datasets["Simple"](PTS)
     elif args.DATASET == "split":
         data = minitorch.datasets["Split"](PTS)
 
