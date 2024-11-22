@@ -179,12 +179,13 @@ def tensor_map(
         else:
             # big_index = np.zeros(MAX_DIMS, dtype=np.int32)
             # small_index = np.zeros(MAX_DIMS, dtype=np.int32)
+            index_cache = np.zeros((2, len(out), MAX_DIMS), dtype=np.int32)
             for pos in prange(len(out)):
                 # to index
-                big_index = np.zeros_like(out_shape, dtype=np.int32)
+                big_index = index_cache[0, pos]
                 to_index(pos, out_shape, big_index)
                 # to small index
-                small_index = np.zeros_like(in_shape, dtype=np.int32)
+                small_index = index_cache[1, pos]
                 broadcast_index(big_index, out_shape, in_shape, small_index)
                 # to pos
                 pos_small = index_to_position(small_index, in_strides)
@@ -239,22 +240,19 @@ def tensor_zip(
             for pos in prange(len(out)):
                 out[pos] = fn(a_storage[pos], b_storage[pos])
         else:
+            index_cache = np.zeros((3, len(out), MAX_DIMS), dtype=np.int32)
             for pos in prange(len(out)):
                 # to index
                 # big_index = np.zeros_like(out_shape, dtype=np.int32)  # Ensure integer dtype
-                big_index = np.zeros(MAX_DIMS, dtype=np.int32)  # Ensure integer dtype
+                big_index = index_cache[0, pos]
                 to_index(pos, out_shape, big_index)
                 # to small index a
                 # small_index_a = np.zeros_like(a_shape, dtype=np.int32)  # Ensure integer dtype
-                small_index_a = np.zeros(
-                    MAX_DIMS, dtype=np.int32
-                )  # Ensure integer dtype
+                small_index_a = index_cache[1, pos] # Ensure integer dtype
                 broadcast_index(big_index, out_shape, a_shape, small_index_a)
                 # to small index b
                 # small_index_b = np.zeros_like(b_shape, dtype=np.int32)  # Ensure integer dtype
-                small_index_b = np.zeros(
-                    MAX_DIMS, dtype=np.int32
-                )  # Ensure integer dtype
+                small_index_b = index_cache[2, pos] # Ensure integer dtype
                 broadcast_index(big_index, out_shape, b_shape, small_index_b)
                 # to pos
                 pos_small_a = int(
@@ -302,9 +300,10 @@ def tensor_reduce(
     ) -> None:
         # TODO: Implement for Task 3.1.
 
+        index_cache = np.zeros((len(out), MAX_DIMS), dtype=np.int32)
         for pos in prange(len(out)):
             # out_index = np.zeros_like(out_shape, dtype=np.int32)
-            out_index = np.zeros(MAX_DIMS, dtype=np.int32)
+            out_index = index_cache[pos]
             reduce_num = a_shape[reduce_dim]
             # to index
             to_index(pos, out_shape, out_index)
