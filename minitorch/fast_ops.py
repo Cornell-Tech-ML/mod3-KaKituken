@@ -248,11 +248,11 @@ def tensor_zip(
                 to_index(pos, out_shape, big_index)
                 # to small index a
                 # small_index_a = np.zeros_like(a_shape, dtype=np.int32)  # Ensure integer dtype
-                small_index_a = index_cache[1, pos] # Ensure integer dtype
+                small_index_a = index_cache[1, pos]  # Ensure integer dtype
                 broadcast_index(big_index, out_shape, a_shape, small_index_a)
                 # to small index b
                 # small_index_b = np.zeros_like(b_shape, dtype=np.int32)  # Ensure integer dtype
-                small_index_b = index_cache[2, pos] # Ensure integer dtype
+                small_index_b = index_cache[2, pos]  # Ensure integer dtype
                 broadcast_index(big_index, out_shape, b_shape, small_index_b)
                 # to pos
                 pos_small_a = int(
